@@ -188,7 +188,7 @@ abstract class SerialClassInfo {
 							} catch (Exception e) {
 							}
 						}
-						// Fall back to Java serialization
+						// Fall back to Java reflection
 						setter = m;
 						return;
 					}
@@ -209,7 +209,7 @@ abstract class SerialClassInfo {
 						}
 					} 
 					
-					// Fall back to Java serialization
+					// Fall back to Java reflection
 					Field f = aClazz.getDeclaredField(name);
 					// security manager may not be happy about this
 					if (!f.isAccessible())
@@ -249,7 +249,7 @@ abstract class SerialClassInfo {
 							} catch (Exception e) {
 							}
 						}
-						// Fall back to Java serialization
+						// Fall back to Java reflection
 						getter = m;
 						return;
 					}
@@ -269,7 +269,7 @@ abstract class SerialClassInfo {
 						} catch (Exception e) {
 						}
 					}
-					// Fall back to Java serialization
+					// Fall back to Java reflection
 					Field f = aClazz.getDeclaredField(name);
 					// security manager may not be happy about this
 					if (!f.isAccessible())
