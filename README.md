@@ -15,8 +15,8 @@ Usage
 
 The API of Quickser is very simple:
 
-   Serialization ser = new Serialization();
-   Object obj1 = ...;
-   byte[] binary = ser.serialize(obj1);
-   Object obj2 = ser.deserialize(binary);
+	Serialization ser = new Serialization();
+	Object obj1 = ...;
+	byte[] binary = ser.serialize(obj1);
+	Object obj2 = ser.deserialize(binary);
 
