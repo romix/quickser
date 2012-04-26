@@ -313,12 +313,13 @@ abstract class SerialClassInfo {
 	Map<Class, Integer> class2classId = new HashMap<Class, Integer>();
 	Map<Integer, Class> classId2class = new HashMap<Integer, Class>();
 
-	public void registerClass(Class clazz) throws IOException {
+	public int registerClass(Class clazz) throws IOException {
 		if (clazz != Object.class)
 			assertClassSerializable(clazz);
 
-		if (containsClass(clazz))
-			return;
+		Integer classId = class2classId.get(clazz);
+		if(classId != null)
+			return classId;
 
 		ObjectStreamField[] streamFields = getFields(clazz);
 		FieldInfo[] fields = new FieldInfo[streamFields.length];
@@ -327,11 +328,13 @@ abstract class SerialClassInfo {
 			fields[i] = new FieldInfo(sf, clazz);
 		}
 
-		ClassInfo i = new ClassInfo(clazz.getName(), fields);
-		class2classId.put(clazz, registered.size());
-		classId2class.put(registered.size(), clazz);
-		registered.add(i);
-		i.setEnum(clazz.isEnum());
+		ClassInfo classInfo = new ClassInfo(clazz.getName(), fields);
+		classId = registered.size();
+		class2classId.put(clazz, classId);
+		classId2class.put(classId, clazz);
+		registered.add(classInfo);
+		classInfo.setEnum(clazz.isEnum());
+		return classId;
 	}
 
 	private ObjectStreamField[] getFields(Class clazz) {
@@ -372,13 +375,13 @@ abstract class SerialClassInfo {
 	}
 
 	public Object getFieldValue(String fieldName, Object object) {
+		int classId = 0;
 		try {
-			registerClass(object.getClass());
+			classId = registerClass(object.getClass());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		ClassInfo classInfo = registered.get(class2classId.get(object
-				.getClass()));
+		ClassInfo classInfo = registered.get(classId);
 		return getFieldValue(classInfo.getField(fieldName), object);
 	}
 
@@ -408,13 +411,13 @@ abstract class SerialClassInfo {
 	}
 
 	public void setFieldValue(String fieldName, Object object, Object value) {
+		int classId = 0;
 		try {
-			registerClass(object.getClass());
+			classId = registerClass(object.getClass());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		ClassInfo classInfo = registered.get(class2classId.get(object
-				.getClass()));
+		ClassInfo classInfo = registered.get(classId);
 		setFieldValue(classInfo.getField(fieldName), object, value);
 	}
 
@@ -458,10 +461,9 @@ abstract class SerialClassInfo {
 
 	public void writeObject(DataOutput out, Object obj,
 			FastArrayList objectStack) throws IOException {
-		registerClass(obj.getClass());
+		int classId = registerClass(obj.getClass());
 
 		// write class header
-		int classId = getClassId(obj.getClass());
 		LongPacker.packInt(out, classId);
 		ClassInfo classInfo = registered.get(classId);
 

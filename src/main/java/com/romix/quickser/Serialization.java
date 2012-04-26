@@ -316,9 +316,8 @@ public class Serialization extends SerialClassInfo implements Serializer {
 
 				// Write class id for components
 				Class<?> componentType = obj.getClass().getComponentType();
-				registerClass(componentType);
+				int classId = registerClass(componentType);
 				// write class header
-				int classId = getClassId(componentType);
 				LongPacker.packInt(out, classId);
 
 				for (Object o : b)
@@ -440,6 +439,8 @@ public class Serialization extends SerialClassInfo implements Serializer {
 		for (long i : obj) {
 			max = Math.max(max, i);
 			min = Math.min(min, i);
+			if(min < Integer.MIN_VALUE || max > Integer.MAX_VALUE)
+				break;
 		}
 
 		if (0 <= min && max <= 255) {
@@ -477,6 +478,8 @@ public class Serialization extends SerialClassInfo implements Serializer {
 		for (int i : obj) {
 			max = Math.max(max, i);
 			min = Math.min(min, i);
+			if(min < Integer.MIN_VALUE || max > Integer.MAX_VALUE)
+				break;
 		}
 
 		boolean fitsInByte = 0 <= min && max <= 255;
