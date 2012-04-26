@@ -38,6 +38,7 @@ import static com.romix.quickser.SerializationHeader.*;
  * future updates.
  * 
  * @author Jan Kotek
+ * @author Roman Levenstein
  */
 @SuppressWarnings("unchecked")
 public class Serialization extends SerialClassInfo implements Serializer {
@@ -56,8 +57,7 @@ public class Serialization extends SerialClassInfo implements Serializer {
 	public Serialization() {
 		super(new ArrayList<ClassInfo>());
 		// Add java.lang.Object as registered class
-		registered
-				.add(new ClassInfo(Object.class.getName(), new FieldInfo[] {}));
+		addClassInfo(new ClassInfo(Object.class.getName(), new FieldInfo[] {}));
 	}
 
 	/**
@@ -1072,7 +1072,7 @@ public class Serialization extends SerialClassInfo implements Serializer {
 		int size = LongPacker.unpackInt(is);
 		// Read class id for components
 		int classId = LongPacker.unpackInt(is);
-		Class clazz = classId2class.get(classId);
+		Class clazz = getClass(classId);
 
 		Object[] s = (Object[]) Array.newInstance(clazz, size);
 		objectStack.add(s);

@@ -315,9 +315,9 @@ abstract class SerialClassInfo {
 		}
 	}
 
-	ArrayList<ClassInfo> registered;
-	Map<Class, Integer> class2classId = new HashMap<Class, Integer>();
-	Map<Integer, Class> classId2class = new HashMap<Integer, Class>();
+	private ArrayList<ClassInfo> registered;
+	private Map<Class, Integer> class2classId = new HashMap<Class, Integer>();
+	private Map<Integer, Class> classId2class = new HashMap<Integer, Class>();
 
 	public int registerClass(Class clazz) throws IOException {
 		if (clazz != Object.class)
@@ -457,6 +457,14 @@ abstract class SerialClassInfo {
 		return (class2classId.get(clazz) != null);
 	}
 
+	void addClassInfo(ClassInfo classInfo) {
+		registered.add(classInfo);
+	}
+	
+	public Class getClass(int classId) {
+		return classId2class.get(classId);
+	}
+	
 	public int getClassId(Class clazz) {
 		Integer classId = class2classId.get(clazz);
 		if (classId != null) {
