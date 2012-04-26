@@ -89,8 +89,8 @@ abstract class SerialClassInfo {
 			return name;
 		}
 
-		public FieldInfo[] getFields() {
-			return (FieldInfo[]) fields.toArray();
+		public List<FieldInfo> getFields() {
+			return fields;
 		}
 
 		public FieldInfo getField(String name) {
@@ -151,6 +151,7 @@ abstract class SerialClassInfo {
 		private int setterIndex;
 		private Object getter;
 		private int getterIndex;
+		private ObjectStreamField objStreamField;
 
 		public FieldInfo(String name, boolean primitive, String type,
 				Class clazz) {
@@ -290,6 +291,7 @@ abstract class SerialClassInfo {
 
 		public FieldInfo(ObjectStreamField sf, Class clazz) {
 			this(sf.getName(), sf.isPrimitive(), sf.getType().getName(), clazz);
+			this.objStreamField = sf;
 		}
 
 		public String getName() {
@@ -306,6 +308,10 @@ abstract class SerialClassInfo {
 
 		private String firstCharCap(String s) {
 			return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+		}
+
+		public ObjectStreamField getObjStreamField() {
+			return objStreamField;
 		}
 	}
 
@@ -467,18 +473,31 @@ abstract class SerialClassInfo {
 		LongPacker.packInt(out, classId);
 		ClassInfo classInfo = registered.get(classId);
 
-		ObjectStreamField[] fields = getFields(obj.getClass());
+		ObjectStreamField[] osFields = classInfo.getObjectStreamFields();
+		if(osFields == null)
+			osFields = getFields(obj.getClass());
 
 		if (classInfo.getEnum() > 0) {
 			int ordinal = ((Enum) obj).ordinal();
 			LongPacker.packInt(out, ordinal);
 		}
 
-		LongPacker.packInt(out, fields.length);
+		LongPacker.packInt(out, osFields.length);
 
-		for (ObjectStreamField f : fields) {
+		int fieldNum = 0;
+		List<FieldInfo> fields = classInfo.getFields();
+		for (ObjectStreamField f : osFields) {
 			// write field ID
-			int fieldId = classInfo.getFieldId(f.getName());
+			int fieldId = -1;
+			FieldInfo field = (fieldNum < fields.size()) ? fields.get(fieldNum)
+					: null;
+			if (field != null) {
+				ObjectStreamField osField = field.getObjStreamField();
+				if (osField == f || osField.equals(f))
+					fieldId = fieldNum;
+			}
+			if (fieldId < 0)
+				fieldId = classInfo.getFieldId(f.getName());
 			if (fieldId == -1) {
 				// field does not exists in class definition stored in db,
 				// propably new field was added so add field descriptor
@@ -489,6 +508,7 @@ abstract class SerialClassInfo {
 			// and write value
 			Object fieldValue = getFieldValue(classInfo.getField(fieldId), obj);
 			serialize(out, fieldValue, objectStack);
+			fieldNum++;
 		}
 	}
 
