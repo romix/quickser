@@ -21,35 +21,36 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Subclass from this class if you have any test cases that need to do file I/O. The
- * setUp() and tearDown() methods here will take care of cleanup on disk.
- *
+ * Subclass from this class if you have any test cases that need to do file I/O.
+ * The setUp() and tearDown() methods here will take care of cleanup on disk.
+ * 
  * @author cdegroot <cg@cdegroot.com>
  */
 abstract class TestCaseWithTestFile extends TestCase {
 
-    public static final String testFolder = System.getProperty("java.io.tmpdir", ".") + "/_testdb";
-//	public static final String testFileName = "test";
+	public static final String testFolder = System.getProperty(
+			"java.io.tmpdir", ".") + "/_testdb";
 
+	// public static final String testFileName = "test";
 
-    public void setUp() throws Exception {
-        File f = new File(testFolder);
-        if (!f.exists())
-            f.mkdirs();
-    }
+	public void setUp() throws Exception {
+		File f = new File(testFolder);
+		if (!f.exists())
+			f.mkdirs();
+	}
 
-    public void tearDown() throws Exception {
-        File f = new File(testFolder);
-        if (f.exists()) {
-            for (File f2 : f.listFiles()) {
-                f2.deleteOnExit();
-                f2.delete();
-            }
-        }
-    }
+	public void tearDown() throws Exception {
+		File f = new File(testFolder);
+		if (f.exists()) {
+			for (File f2 : f.listFiles()) {
+				f2.deleteOnExit();
+				f2.delete();
+			}
+		}
+	}
 
-    static public String newTestFile() {
-        return testFolder + File.separator + "test" + System.nanoTime();
-    }
+	static public String newTestFile() {
+		return testFolder + File.separator + "test" + System.nanoTime();
+	}
 
 }
