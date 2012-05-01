@@ -57,18 +57,17 @@ public class Serialization extends SerialClassInfo implements Serializer {
 	public Serialization() {
 		super(new ArrayList<ClassInfo>());
 		// Add java.lang.Object as registered class
-		addClassInfo(new ClassInfo(Object.class.getName(), new FieldInfo[] {}));
+		addClassInfo(new ClassInfo(Object.class.getName(), new FieldInfo[] {}, false,false));
 	}
 
 	/**
 	 * Serialize the object into a byte array.
 	 */
 	public byte[] serialize(Object obj) throws IOException {
-		ByteArrayOutputStream ba = new ByteArrayOutputStream();
-		DataOutputStream da = new DataOutputStream(ba);
-		serialize(da, obj);
-
-		da.close();
+        DataInputOutput ba = new DataInputOutput();
+        
+		serialize(ba, obj);
+		
 		return ba.toByteArray();
 	}
 
@@ -592,13 +591,12 @@ public class Serialization extends SerialClassInfo implements Serializer {
 	 */
 	public Object deserialize(byte[] buf) throws ClassNotFoundException,
 			IOException {
-		ByteArrayInputStream bs = new ByteArrayInputStream(buf);
-		DataInputStream das = new DataInputStream(bs);
-		Object ret = deserialize(das);
-		if (bs.available() != 0)
-			throw new InternalError("bytes left: " + bs.available());
+        DataInputOutput bs = new DataInputOutput(buf);
+        Object ret = deserialize(bs);
+        if (bs.available() != 0)
+            throw new InternalError("bytes left: " + bs.available());
 
-		return ret;
+        return ret;
 	}
 
 	static String deserializeString(DataInput buf) throws IOException {
@@ -1300,7 +1298,7 @@ public class Serialization extends SerialClassInfo implements Serializer {
 		 * @return index of object in list or -1 if not found
 		 */
 		int identityIndexOf(Object obj) {
-			for (int i = 0; i < size; i++) {
+			for (int i = size - 1; i >= 0; i--) {
 				if (obj == elementData[i])
 					return i;
 			}

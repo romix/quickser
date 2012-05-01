@@ -4,8 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -13,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -154,7 +158,7 @@ public class TestSerializationCorrectness {
 				InstantiationException, IllegalAccessException {
 			inflater.reset();
 			inflater.setInput(buf, 0, buf.length);
-			byte[] deserout = new byte[buf.length*3];
+			byte[] deserout = new byte[buf.length * 3];
 			try {
 				int outputBytes = inflater.inflate(deserout);
 				return _serializer.deserialize(
@@ -233,7 +237,7 @@ public class TestSerializationCorrectness {
 		public SerializableObject(int x) {
 			this.x = x;
 		}
-		
+
 		public int getX() {
 			return x;
 		}
@@ -642,7 +646,7 @@ public class TestSerializationCorrectness {
 		doChecks(new Serializer[] { ser, ser, ser, ser });
 	}
 
-//	@Test
+	// @Test
 	public void testJavaSerializationWithCompression() throws Exception {
 		Serializer ser = new JavaSerializer();
 		doChecks(new Serializer[] { new GZIPSerializer(ser),
@@ -656,7 +660,7 @@ public class TestSerializationCorrectness {
 		doChecks(new Serializer[] { ser, ser, ser, ser });
 	}
 
-//	@Test
+	// @Test
 	public void testQuickserSerializationWithCompression() throws Exception {
 		Serializer ser = new QuickserSerializer();
 		doChecks(new Serializer[] { new GZIPSerializer(ser),
@@ -668,50 +672,225 @@ public class TestSerializationCorrectness {
 		Bean bean = fillBean(new Bean());
 		verifyBean(bean);
 		checkSerializedSize(ser[0], bean);
-		
-		// Check serialization of private fields and classes without 
-		// 0-arg constructor
-		SerializableObject so = new SerializableObject(100);
-		SerializableObject dso = (SerializableObject) getDeserializedObject(ser[0], so);
-		assertEquals(so.getX(), dso.getX());
-		
+
+		SerializableObject so = doCheckPrivateFieldsAndNoZeroArgConstructor(ser);
+
 		// Check serialization of enums with null values
-		Order[] orders = new Order[] {null, Order.ASCENDING};
-		Order[] dorders = (Order[]) getDeserializedObject(ser[0], orders);
-		assertEquals(orders[0], dorders[0]);
-		assertEquals(orders[1], dorders[1]);
-		
+		doCheckEnumsWithNullValue(ser);
+
 		// Test Object[] arrays of heterogeneous elements
-		Object[] ha = new Object[] {Order.ASCENDING, null, bean, so, so};
-		Object[] dha = (Object[]) getDeserializedObject(ser[0], ha);
-		verifyBean((Bean) dha[2]);
-		assertEquals(((SerializableObject)dha[3]).getX(), ((SerializableObject)ha[3]).getX());
-		assertEquals(dha[1], ha[1]);
-		assertTrue(dha[4]==dha[3]);
-		assertEquals(dha[0], ha[0]);
-		
+		doCheckHeterogeneousArrays(ser, bean, so);
+
 		// Test multi-dimensional Object[][] arrays of heterogeneous elements
+		doCheckMultiDimensionalHeterogeneousArrays(ser, bean, so);
+
+		// Test very long arrays of integers
+		long[] la = doCheckVeryLongIntArrays(ser);
+
+		// Test cyclic data-structures
+		doCheckCyclicDataStructures(ser);
+		
+		doCheckDummyPojoWithSharing(ser);
+		
+		doCheckExternalizable(ser);
+
+		// Test very deep object graphs
+		// FIXME: This kills all serialization frameworks!
+		// doCheckDeepObjectGraphs(ser);
+
+		checkPerformance(ser, la, NUM_ITRERATIONS);
+	}
+
+
+	static class List1 implements Serializable {
+		Object value;
+		List1 next;
+
+		public Object getValue() {
+			return value;
+		}
+
+		public void setValue(Object value) {
+			this.value = value;
+		}
+
+		public List1 getNext() {
+			return next;
+		}
+
+		public void setNext(List1 next) {
+			this.next = next;
+		}
+	}
+
+	public static class DummyPojo implements Serializable {
+		/**
+		 * A dummy pojo implementation for test purposes
+		 */
+		private static final long serialVersionUID = 1L;
+
+		public DummyPojo() {
+
+		}
+
+		public DummyPojo(String name, int size) {
+			this.name = name;
+			this.size = size;
+			payLoad1 = new String(new byte[size]);
+			payLoad2 = payLoad1;
+			// map = new HashMap<String, String>();
+			// map.put(name, payLoad2);
+			properties = new Object[] { new Integer(1), new Date(),
+					new DummyPojo() };
+		}
+
+		public String name;
+
+		public int size;
+
+		public String payLoad1;
+		public String payLoad2;
+		public String payLoad3;
+
+		public Map<String, String> map;
+
+		public Object[] properties;
+	}
+
+	private void doCheckDummyPojoWithSharing(Serializer[] ser)
+			throws IOException, ClassNotFoundException, InstantiationException,
+			IllegalAccessException {
+		DummyPojo pojo = new DummyPojo("TestDummyPojo", 1024);
+		DummyPojo dpojo = (DummyPojo) getDeserializedObject(ser[0], pojo);
+		assertEquals(dpojo.name, pojo.name);
+		assertEquals(dpojo.size, pojo.size);
+		assertEquals(dpojo.payLoad1, pojo.payLoad1);
+		assertEquals(dpojo.payLoad2, pojo.payLoad2);
+		assertEquals(dpojo.payLoad3, pojo.payLoad3);
+		assertEquals(dpojo.properties[0], pojo.properties[0]);
+		assertEquals(dpojo.properties[1], pojo.properties[1]);
+//		assertEquals(dpojo.properties[2], pojo.properties[2]);
+	}
+
+	private void doCheckCyclicDataStructures(Serializer[] ser)
+			throws IOException, ClassNotFoundException, InstantiationException,
+			IllegalAccessException {
+		List1 elem1 = new List1();
+		elem1.setValue(1);
+		elem1.setNext(elem1);
+
+		List1 delem1 = (List1) getDeserializedObject(ser[0], elem1);
+		assertTrue(delem1.getNext() == delem1);
+	}
+
+	private void doCheckDeepObjectGraphs(Serializer[] ser) throws IOException,
+			ClassNotFoundException, InstantiationException,
+			IllegalAccessException {
+		List1 elem1 = new List1();
+
+		List1 elem = elem1;
+		for (int i = 0; i < 5000000; i++) {
+			elem.setValue(i);
+			elem.setNext(new List1());
+			elem = elem.getNext();
+		}
+
+		List1 delem1 = (List1) getDeserializedObject(ser[0], elem1);
+
+	}
+
+	private long[] doCheckVeryLongIntArrays(Serializer[] ser)
+			throws IOException, ClassNotFoundException, InstantiationException,
+			IllegalAccessException {
+		long[] la = new long[100000];
+		for (int i = 0; i < la.length; ++i)
+			la[i] = i % 255;
+		long[] dla = (long[]) getDeserializedObject(ser[0], la);
+		for (int i = 0; i < la.length; ++i) {
+			assertEquals(dla[i], la[i]);
+		}
+		return la;
+	}
+
+	private void doCheckMultiDimensionalHeterogeneousArrays(Serializer[] ser,
+			Bean bean, SerializableObject so) throws IOException,
+			ClassNotFoundException, InstantiationException,
+			IllegalAccessException {
 		Object[][] mha = new Object[2][3];
 		mha[0][0] = bean;
 		mha[1][1] = so;
 		mha[1][2] = Order.DESCENDING;
-		    
+
 		Object[][] dmha = (Object[][]) getDeserializedObject(ser[0], mha);
 		verifyBean((Bean) dmha[0][0]);
-		assertEquals(((SerializableObject)dmha[1][1]).getX(), ((SerializableObject)mha[1][1]).getX());
+		assertEquals(((SerializableObject) dmha[1][1]).getX(),
+				((SerializableObject) mha[1][1]).getX());
 		assertEquals(dmha[1][2], mha[1][2]);
-		
-		// Test very long arrays of integers
-		long[] la = new long[100000];
-		for(int i=0;i<la.length; ++i) 
-			la[i] = i%255;
-		long[] dla = (long[]) getDeserializedObject(ser[0], la);
-		for(int i=0;i<la.length; ++i) {
-			assertEquals(dla[i], la[i]);
-		}
-			
-		checkPerformance(ser, la, NUM_ITRERATIONS);
 	}
+
+	private void doCheckHeterogeneousArrays(Serializer[] ser, Bean bean,
+			SerializableObject so) throws IOException, ClassNotFoundException,
+			InstantiationException, IllegalAccessException {
+		Object[] ha = new Object[] { Order.ASCENDING, null, bean, so, so };
+		Object[] dha = (Object[]) getDeserializedObject(ser[0], ha);
+		verifyBean((Bean) dha[2]);
+		assertEquals(((SerializableObject) dha[3]).getX(),
+				((SerializableObject) ha[3]).getX());
+		assertEquals(dha[1], ha[1]);
+		assertTrue(dha[4] == dha[3]);
+		assertEquals(dha[0], ha[0]);
+	}
+
+	private void doCheckEnumsWithNullValue(Serializer[] ser)
+			throws IOException, ClassNotFoundException, InstantiationException,
+			IllegalAccessException {
+		Order[] orders = new Order[] { null, Order.ASCENDING };
+		Order[] dorders = (Order[]) getDeserializedObject(ser[0], orders);
+		assertEquals(orders[0], dorders[0]);
+		assertEquals(orders[1], dorders[1]);
+	}
+
+	private SerializableObject doCheckPrivateFieldsAndNoZeroArgConstructor(
+			Serializer[] ser) throws IOException, ClassNotFoundException,
+			InstantiationException, IllegalAccessException {
+		// Check serialization of private fields and classes without
+		// 0-arg constructor
+		SerializableObject so = new SerializableObject(100);
+		SerializableObject dso = (SerializableObject) getDeserializedObject(
+				ser[0], so);
+		assertEquals(so.getX(), dso.getX());
+		return so;
+	}
+
+	static class Extr implements  Externalizable{
+
+        int aaa = 11;
+        String  l = "agfa";
+        
+        public Extr() {}
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(l);
+            out.writeInt(aaa);
+
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            l = (String) in.readObject();
+            aaa = in.readInt()+1;
+        }
+    }
+
+    private void doCheckExternalizable(Serializer[] ser) throws Exception{
+        Extr e = new Extr();
+        e.aaa = 15;
+        e.l = "pakla";
+        
+        e = (Extr) getDeserializedObject(ser[0], e);
+        assertEquals(e.aaa,16); //was incremented during serialization
+        assertEquals(e.l,"pakla");
+
+    }
 
 	private void checkPerformance(final Serializer ser[], final Object obj,
 			final int numItrerations) throws Exception {
@@ -764,6 +943,8 @@ public class TestSerializationCorrectness {
 			throws IOException, ClassNotFoundException, InstantiationException,
 			IllegalAccessException {
 		byte[] serializedBuf = ser.serialize(obj, obj.getClass());
+		System.out.println("Size of serialized representation for object of class " + obj.getClass().getName() + " using "
+				+ ser.getName() + ": " + serializedBuf.length);
 		return ser.deserialize(serializedBuf, obj.getClass());
 	}
 }
