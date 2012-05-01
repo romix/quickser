@@ -26,10 +26,11 @@ abstract class SerialClassInfo {
 			LongPacker.packInt(out, obj.size());
 			for (ClassInfo ci : obj) {
 				out.writeUTF(ci.getName());
-                out.writeBoolean(ci.isEnum);
-                out.writeBoolean(ci.isExternalizable);
-                if(ci.isExternalizable) continue; //no fields
-                
+				out.writeBoolean(ci.isEnum);
+				out.writeBoolean(ci.isExternalizable);
+				if (ci.isExternalizable)
+					continue; // no fields
+
 				LongPacker.packInt(out, ci.fields.size());
 				for (FieldInfo fi : ci.fields) {
 					out.writeUTF(fi.getName());
@@ -46,16 +47,17 @@ abstract class SerialClassInfo {
 
 			for (int i = 0; i < size; i++) {
 				String className = in.readUTF();
-                boolean isEnum = in.readBoolean();
-                boolean isExternalizable = in.readBoolean();
-                
-                int fieldsNum = isExternalizable? 0 : LongPacker.unpackInt(in);
+				boolean isEnum = in.readBoolean();
+				boolean isExternalizable = in.readBoolean();
+
+				int fieldsNum = isExternalizable ? 0 : LongPacker.unpackInt(in);
 				FieldInfo[] fields = new FieldInfo[fieldsNum];
 				for (int j = 0; j < fieldsNum; j++) {
 					fields[j] = new FieldInfo(in.readUTF(), in.readBoolean(),
 							in.readUTF(), Class.forName(className));
 				}
-                ret.add(new ClassInfo(className, fields, isEnum, isExternalizable));
+				ret.add(new ClassInfo(className, fields, isEnum,
+						isExternalizable));
 			}
 			return ret;
 		}
@@ -78,22 +80,23 @@ abstract class SerialClassInfo {
 		private final Map<String, FieldInfo> name2fieldInfo = new HashMap<String, FieldInfo>();
 		private final Map<String, Integer> name2fieldId = new HashMap<String, Integer>();
 		private ObjectStreamField[] objectStreamFields;
-		
-        final boolean isEnum;
 
-        final boolean isExternalizable;
+		final boolean isEnum;
 
-		ClassInfo(final String name, final FieldInfo[] fields, final boolean isEnum, final boolean isExternalizable) {
-            this.name = name;
-            this.isEnum = isEnum;
-            this.isExternalizable = isExternalizable;
+		final boolean isExternalizable;
 
-            for (FieldInfo f : fields) {
-                this.name2fieldId.put(f.getName(), this.fields.size());
-                this.fields.add(f);
-                this.name2fieldInfo.put(f.getName(), f);
-            }
-        }
+		ClassInfo(final String name, final FieldInfo[] fields,
+				final boolean isEnum, final boolean isExternalizable) {
+			this.name = name;
+			this.isEnum = isEnum;
+			this.isExternalizable = isExternalizable;
+
+			for (FieldInfo f : fields) {
+				this.name2fieldId.put(f.getName(), this.fields.size());
+				this.fields.add(f);
+				this.name2fieldInfo.put(f.getName(), f);
+			}
+		}
 
 		public String getName() {
 			return name;
@@ -330,7 +333,7 @@ abstract class SerialClassInfo {
 			assertClassSerializable(clazz);
 
 		Integer classId = class2classId.get(clazz);
-		if(classId != null)
+		if (classId != null)
 			return classId;
 
 		ObjectStreamField[] streamFields = getFields(clazz);
@@ -340,7 +343,8 @@ abstract class SerialClassInfo {
 			fields[i] = new FieldInfo(sf, clazz);
 		}
 
-        ClassInfo classInfo = new ClassInfo(clazz.getName(), fields,clazz.isEnum(), Externalizable.class.isAssignableFrom(clazz));
+		ClassInfo classInfo = new ClassInfo(clazz.getName(), fields,
+				clazz.isEnum(), Externalizable.class.isAssignableFrom(clazz));
 		classId = registered.size();
 		class2classId.put(clazz, classId);
 		classId2class.put(classId, clazz);
@@ -465,11 +469,11 @@ abstract class SerialClassInfo {
 	void addClassInfo(ClassInfo classInfo) {
 		registered.add(classInfo);
 	}
-	
+
 	public Class getClass(int classId) {
 		return classId2class.get(classId);
 	}
-	
+
 	public int getClassId(Class clazz) {
 		Integer classId = class2classId.get(clazz);
 		if (classId != null) {
@@ -486,22 +490,22 @@ abstract class SerialClassInfo {
 		LongPacker.packInt(out, classId);
 		ClassInfo classInfo = registered.get(classId);
 
-        if(classInfo.isExternalizable){
-            Externalizable o = (Externalizable) obj;
-            DataInputOutput out2 = (DataInputOutput) out;
-            try{
-                out2.serializer = this;
-                out2.objectStack = objectStack;
-                o.writeExternal(out2);
-            }finally {
-                out2.serializer = null;
-                out2.objectStack = null;
-            }
-            return;
-        }
-        
+		if (classInfo.isExternalizable) {
+			Externalizable o = (Externalizable) obj;
+			DataInputOutput out2 = (DataInputOutput) out;
+			try {
+				out2.serializer = this;
+				out2.objectStack = objectStack;
+				o.writeExternal(out2);
+			} finally {
+				out2.serializer = null;
+				out2.objectStack = null;
+			}
+			return;
+		}
+
 		ObjectStreamField[] osFields = classInfo.getObjectStreamFields();
-		if(osFields == null)
+		if (osFields == null)
 			osFields = getFields(obj.getClass());
 
 		if (classInfo.getEnum()) {
