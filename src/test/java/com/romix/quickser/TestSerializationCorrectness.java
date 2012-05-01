@@ -689,9 +689,9 @@ public class TestSerializationCorrectness {
 
 		// Test cyclic data-structures
 		doCheckCyclicDataStructures(ser);
-		
+
 		doCheckDummyPojoWithSharing(ser);
-		
+
 		doCheckExternalizable(ser);
 
 		// Test very deep object graphs
@@ -700,7 +700,6 @@ public class TestSerializationCorrectness {
 
 		checkPerformance(ser, la, NUM_ITRERATIONS);
 	}
-
 
 	static class List1 implements Serializable {
 		Object value;
@@ -769,7 +768,7 @@ public class TestSerializationCorrectness {
 		assertEquals(dpojo.payLoad3, pojo.payLoad3);
 		assertEquals(dpojo.properties[0], pojo.properties[0]);
 		assertEquals(dpojo.properties[1], pojo.properties[1]);
-//		assertEquals(dpojo.properties[2], pojo.properties[2]);
+		// assertEquals(dpojo.properties[2], pojo.properties[2]);
 	}
 
 	private void doCheckCyclicDataStructures(Serializer[] ser)
@@ -862,35 +861,37 @@ public class TestSerializationCorrectness {
 		return so;
 	}
 
-	static class Extr implements  Externalizable{
+	static class Extr implements Externalizable {
 
-        int aaa = 11;
-        String  l = "agfa";
-        
-        public Extr() {}
+		int aaa = 11;
+		String l = "agfa";
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(l);
-            out.writeInt(aaa);
+		public Extr() {
+		}
 
-        }
+		public void writeExternal(ObjectOutput out) throws IOException {
+			out.writeObject(l);
+			out.writeInt(aaa);
 
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            l = (String) in.readObject();
-            aaa = in.readInt()+1;
-        }
-    }
+		}
 
-    private void doCheckExternalizable(Serializer[] ser) throws Exception{
-        Extr e = new Extr();
-        e.aaa = 15;
-        e.l = "pakla";
-        
-        e = (Extr) getDeserializedObject(ser[0], e);
-        assertEquals(e.aaa,16); //was incremented during serialization
-        assertEquals(e.l,"pakla");
+		public void readExternal(ObjectInput in) throws IOException,
+				ClassNotFoundException {
+			l = (String) in.readObject();
+			aaa = in.readInt() + 1;
+		}
+	}
 
-    }
+	private void doCheckExternalizable(Serializer[] ser) throws Exception {
+		Extr e = new Extr();
+		e.aaa = 15;
+		e.l = "pakla";
+
+		e = (Extr) getDeserializedObject(ser[0], e);
+		assertEquals(e.aaa, 16); // was incremented during serialization
+		assertEquals(e.l, "pakla");
+
+	}
 
 	private void checkPerformance(final Serializer ser[], final Object obj,
 			final int numItrerations) throws Exception {
@@ -943,8 +944,12 @@ public class TestSerializationCorrectness {
 			throws IOException, ClassNotFoundException, InstantiationException,
 			IllegalAccessException {
 		byte[] serializedBuf = ser.serialize(obj, obj.getClass());
-		System.out.println("Size of serialized representation for object of class " + obj.getClass().getName() + " using "
-				+ ser.getName() + ": " + serializedBuf.length);
+		System.out
+				.println("Size of serialized representation for object of class "
+						+ obj.getClass().getName()
+						+ " using "
+						+ ser.getName()
+						+ ": " + serializedBuf.length);
 		return ser.deserialize(serializedBuf, obj.getClass());
 	}
 }
