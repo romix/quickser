@@ -7,6 +7,7 @@ Features
 *   Much faster than usual Java serialization (up to 11 times faster on some tests)
 *   Produces a very compact serialized representation, often smaller than Kryo or protostuff
 *   Supports cyclic references and shared objects inside object graph
+*   Supports custom serialization for classes implementing Externalizable interface
 *   Has minimum external dependencies
 *   Very small - just a few classes (33 KB jar)
 
