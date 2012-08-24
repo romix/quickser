@@ -368,7 +368,10 @@ abstract class SerialClassInfo {
 					fieldsList.add(f);
 				}
 				clazz = clazz.getSuperclass();
-				streamClass = ObjectStreamClass.lookup(clazz);
+				if(clazz != null)
+					streamClass = ObjectStreamClass.lookup(clazz);
+				else
+					streamClass = null;
 			}
 			fields = new ObjectStreamField[fieldsList.size()];
 			for (int i = 0; i < fields.length; i++) {
