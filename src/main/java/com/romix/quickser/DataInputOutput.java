@@ -21,6 +21,10 @@ class DataInputOutput implements DataInput, DataOutput, ObjectInput, ObjectOutpu
         buf = new byte[8];
     }
 
+    public DataInputOutput(int size) {
+        buf = new byte[size];
+    }
+    
     public DataInputOutput(byte[] data) {
         buf = data;
         count = data.length;
