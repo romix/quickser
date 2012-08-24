@@ -382,10 +382,10 @@ public class SerializationTest extends TestCase {
 		assertEquals(d, ser.deserialize(ser.serialize(d)));
 	}
 
-	static class ClassWithListOfSringArrays implements Serializable {
+	static class ClassWithListOfStringArrays implements Serializable {
 		List<String[]> strList = new ArrayList<String[]>();
 		
-		public ClassWithListOfSringArrays(int len) {
+		public ClassWithListOfStringArrays(int len) {
 			for(int i=0;i<len;++i) {
 				strList.add(new String[]{"name", "elem" + i});
 			}
@@ -408,7 +408,7 @@ public class SerializationTest extends TestCase {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			ClassWithListOfSringArrays other = (ClassWithListOfSringArrays) obj;
+			ClassWithListOfStringArrays other = (ClassWithListOfStringArrays) obj;
 			if (strList == null) {
 				if (other.strList != null)
 					return false;
@@ -469,8 +469,8 @@ public class SerializationTest extends TestCase {
 	}
 	
 	public void testClassWithListOfSringArrays() throws IOException, ClassNotFoundException {
-		ClassWithListOfSringArrays d = new ClassWithListOfSringArrays(30);
-		ClassWithListOfSringArrays dd = (ClassWithListOfSringArrays)ser.deserialize(ser.serialize(d));
+		ClassWithListOfStringArrays d = new ClassWithListOfStringArrays(30);
+		ClassWithListOfStringArrays dd = (ClassWithListOfStringArrays)ser.deserialize(ser.serialize(d));
 		assertEquals(d, dd);
 	}
 
