@@ -382,4 +382,101 @@ public class SerializationTest extends TestCase {
 		assertEquals(d, ser.deserialize(ser.serialize(d)));
 	}
 
+	static class ClassWithListOfSringArrays implements Serializable {
+		List<String[]> strList = new ArrayList<String[]>();
+		
+		public ClassWithListOfSringArrays(int len) {
+			for(int i=0;i<len;++i) {
+				strList.add(new String[]{"name", "elem" + i});
+			}
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((strList == null) ? 0 : strList.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ClassWithListOfSringArrays other = (ClassWithListOfSringArrays) obj;
+			if (strList == null) {
+				if (other.strList != null)
+					return false;
+			} else if(strList.size() != other.strList.size()) 
+				return false;
+			else{
+				for(int i=0; i<strList.size(); i++) {
+					String[] ar1 = strList.get(i);
+					String[] ar2 = other.strList.get(i);
+					boolean isSame = Arrays.equals(ar1, ar2);
+					if(!isSame)
+						return false;
+				}
+			}
+			return true;
+		}
+		
+	}
+	
+	static class ClassWithListOfLists implements Serializable {
+		List<List<String>> listOfLists = new ArrayList<List<String>>();
+		
+		public ClassWithListOfLists(int len) {
+			for(int i=0;i<len;++i) {
+				ArrayList<String> subList = new ArrayList<String>();
+				subList.add("Name");
+				subList.add("elem" + i);
+				listOfLists.add(subList);
+			}
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((listOfLists == null) ? 0 : listOfLists.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ClassWithListOfLists other = (ClassWithListOfLists) obj;
+			if (listOfLists == null) {
+				if (other.listOfLists != null)
+					return false;
+			} else if (!listOfLists.equals(other.listOfLists))
+				return false;
+			return true;
+		}
+		
+	}
+	
+	public void testClassWithListOfSringArrays() throws IOException, ClassNotFoundException {
+		ClassWithListOfSringArrays d = new ClassWithListOfSringArrays(30);
+		ClassWithListOfSringArrays dd = (ClassWithListOfSringArrays)ser.deserialize(ser.serialize(d));
+		assertEquals(d, dd);
+	}
+
+	public void testClassWithListOfLists() throws IOException, ClassNotFoundException {
+		ClassWithListOfLists d = new ClassWithListOfLists(30);
+		ClassWithListOfLists dd = (ClassWithListOfLists)ser.deserialize(ser.serialize(d));
+		assertEquals(d, dd);
+	}
 }
