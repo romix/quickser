@@ -59,6 +59,19 @@ public class SerializationTest extends TestCase {
 		}
 	}
 
+	public void testByte() throws IOException, ClassNotFoundException {
+		byte[] vals = { (byte) (-Byte.MIN_VALUE + 1),
+			(byte) -Byte.MIN_VALUE, -10, -9, -8, -7, -6, -5, -4, -1, 0,
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 125, Byte.MAX_VALUE - 1,
+			Byte.MAX_VALUE };
+		for (byte i : vals) {
+			byte[] buf = ser.serialize(i);
+			Object l2 = ser.deserialize(buf);
+			assertTrue(l2.getClass() == Byte.class);
+			assertEquals(l2, i);
+		}
+	}
+
 	public void testDouble() throws IOException, ClassNotFoundException {
 		double[] vals = { 1f, 0f, -1f, Math.PI, 255, 256, Short.MAX_VALUE,
 				Short.MAX_VALUE + 1, -100 };
